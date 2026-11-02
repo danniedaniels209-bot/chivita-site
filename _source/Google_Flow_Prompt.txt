@@ -1,0 +1,11 @@
+SECTION 03 — MATCHED STUDIO POUR
+FIRST FRAME: animation-frames/pre-pour-start.png
+LAST FRAME: animation-frames/pour-end.png
+Use these studio images together. Do not use the earlier breakfast starting frame.
+
+Create one 8-second photorealistic 16:9 product animation. Begin exactly on the supplied first frame and end on the supplied last frame. Keep the camera locked. Preserve the orange disc, stone platform, glass position and shape, grounded fruit, flowers, foliage, lighting and reflections. Preserve the carton shape and printed label.
+0–2 seconds: the upright carton lifts gently from the platform and tilts toward the empty glass, moving its open spout into the position shown in the final frame. It stays rigid.
+2–3 seconds: a continuous orange juice stream starts only from the open spout and reaches the glass.
+3–6 seconds: the stationary glass fills gradually to the level shown in the final frame. A small splash forms where the stream enters the juice. No overflow.
+6–8 seconds: settle into the supplied final composition and hold it completely still, including the visible stream and splash. This is an intentional frozen product moment.
+No moving scenery, morphing carton or glass, changing labels, extra fruit, cap animation, people, hands, speech, music, text or camera movement.

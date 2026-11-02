@@ -1,0 +1,40 @@
+# Render Blueprint - Chivita "Bright by Nature"
+#
+# Static site. There is no build step: the page is plain HTML, CSS and vanilla JS,
+# so Render just serves the directory as-is.
+#
+# Deploy: Render Dashboard > New > Blueprint > point at this repo.
+
+services:
+  - type: web
+    name: chivita-site
+    runtime: static
+    buildCommand: "echo 'no build step - static assets served directly'"
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: false
+
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+
+      - path: /assets/*
+        name: Accept-Ranges
+        value: bytes
+
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
