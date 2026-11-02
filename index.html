@@ -38,14 +38,40 @@ h1{aspect-ratio:1.58;overflow:visible;mix-blend-mode:normal}.liquid-title{width:
 /* Phones held upright: show the desktop layout turned 90°, so visitors rotate the phone. */
 #bar-track{position:fixed;top:0;left:0;width:100%;height:3px;z-index:30;pointer-events:none}
 #bg-progress{position:absolute;top:0;left:0}
-@media (orientation:portrait) and (max-width:1024px){
+/* Keep this query in sync with ROTATED_QUERY in the script. Touch-only, so narrow desktop windows are never rotated. */
+@media (orientation:portrait) and (max-width:1024px) and (hover:none) and (pointer:coarse){
  html,body{height:100%;overflow:hidden}
  #app,#loader,#bar-track{position:fixed;top:0;left:100vw;width:100vh;width:100dvh;height:100vw;transform-origin:0 0;transform:rotate(90deg)}
  #app{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
  #bar-track{height:3px}
- #loader{inset:auto}
- dialog{transform:rotate(90deg);max-width:min(440px,80vh)}
+ /* On tall phones (19.5:9 and up) a 19:9 hero is taller than the screen is wide, so its bottom edge hung off-screen. */
+ .hero{max-height:100vw}
+ /* The copy is sized by width, so shrink it by as much as the hero lost in height (--hero-fit is set by the script),
+    and lift it to clear the flavour buttons, which sat under the CTA. */
+ .hero .copy{top:14.5%;transform-origin:0 0;scale:var(--hero-fit,1)}
+ /* Turned 90°, the dialog's height runs across the screen's width, so cap it by the width and let it scroll. */
+ dialog{transform:rotate(90deg);max-width:min(440px,calc(100dvh - 32px));max-height:calc(100vw - 24px);overflow:auto;padding:28px 32px}
+ dialog h2{font-size:32px;margin:12px 0}
+ /* The browser maps touches into the turned page itself; screen-axis pan limits would block scrolling. */
+ .liquid-title,.flavour-stage>img{touch-action:auto}
+ /* Readable text and finger-sized tap targets (sizes elsewhere scale with the page width, ~650-900px here). */
+ nav{display:none}
+ .menu-button{min-width:44px;min-height:44px;font-size:max(2cqw,22px)}
+ #menu{font-size:16px}
+ .flavours button,.cta,.flavour-dots button{position:relative}
+ .flavours button{font-size:max(1.1cqw,11px)}
+ .flavours button::after{content:'';position:absolute;inset:-12px -2px}
+ .cta::after{content:'';position:absolute;inset:-10px}
+ .flavour-dots button::after{content:'';position:absolute;inset:-14px -5px}
+ .cta{font-size:max(1.25cqw,11px)}.campaign .cta{font-size:max(1cqw,11px)}
+ .benefits>div{font-size:max(1.05cqw,11px)}
+ .eyebrow,.fruit-copy .eyebrow,.campaign .eyebrow{font-size:max(.9cqw,9px)}
+ .fruit-caption{font-size:max(.95cqw,9px)}
+ .flavour-stage .campaign-copy>p:not(.eyebrow):not(.availability){font-size:max(1.25cqw,11px)}
+ .availability,.flavour-stage .availability{font-size:max(.75cqw,9px)}
 }
+/* Phones held sideways use the normal layout: lift the hero copy so the CTA clears the flavour buttons. */
+@media (orientation:landscape) and (max-height:600px) and (hover:none) and (pointer:coarse){.hero .copy{top:15.5%}}
 
 /* ===== Headline letters ===== */
 .headline{display:block;overflow:visible}
@@ -232,9 +258,22 @@ async function selectFlavour(name){
 }
 $$('.flavour-dots button').forEach(b=>b.onclick=()=>selectFlavour(b.dataset.flavour));const stepFlavour=d=>{const i=flavourNames.indexOf($('#current-flavour').textContent);selectFlavour(flavourNames[(i+d+flavourNames.length)%flavourNames.length]);};$('.flavour-arrow.prev').onclick=()=>stepFlavour(-1);$('.flavour-arrow.next').onclick=()=>stepFlavour(1);$('#flavour-stage').addEventListener('keydown',e=>{if(e.key==='ArrowLeft')stepFlavour(-1);if(e.key==='ArrowRight')stepFlavour(1);});
 $$('.flavours button').forEach(b=>b.onclick=()=>{selectFlavour(b.textContent);$('#flavour-stage').scrollIntoView({behavior:reduced?'auto':'smooth'});});
-let touchX=0;
-sceneImage.addEventListener('touchstart',e=>{touchX=e.changedTouches[0].clientX;},{passive:true});
-sceneImage.addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-touchX;if(Math.abs(d)>50){const i=flavourNames.indexOf($('#current-flavour').textContent);selectFlavour(flavourNames[(i+(d<0?1:3))%4]);}},{passive:true});
+/* Phones held upright show the page turned 90° (see the CSS), so the page's left-right is the screen's up-down there. */
+const rotatedMQ=matchMedia('(orientation:portrait) and (max-width:1024px) and (hover:none) and (pointer:coarse)'); // ROTATED_QUERY
+const swipeAxis=e=>rotatedMQ.matches?e.changedTouches[0].clientY:e.changedTouches[0].clientX;
+let touchStart=0;
+sceneImage.addEventListener('touchstart',e=>{touchStart=swipeAxis(e);},{passive:true});
+sceneImage.addEventListener('touchend',e=>{const d=swipeAxis(e)-touchStart;if(Math.abs(d)>50)stepFlavour(d<0?1:-1);},{passive:true});
+
+/* Turning the phone swaps the scroller (#app upright, the document sideways); carry the reading position across. */
+const appEl=$('#app'),currentScroller=()=>rotatedMQ.matches?appEl:document.scrollingElement;
+let scrollFraction=0;
+const rememberScroll=e=>{const s=currentScroller();if((e.target===document?document.scrollingElement:e.target)!==s)return;scrollFraction=s.scrollTop/Math.max(1,s.scrollHeight-s.clientHeight);};
+window.addEventListener('scroll',rememberScroll,{passive:true});appEl.addEventListener('scroll',rememberScroll,{passive:true});
+/* How much of its 19:9 height the hero kept after the CSS cap (1 = all of it). */
+const heroSection=$('.hero');
+new ResizeObserver(()=>heroSection.style.setProperty('--hero-fit',Math.min(1,heroSection.offsetHeight/(heroSection.offsetWidth*9/19)).toFixed(4))).observe(heroSection);
+rotatedMQ.addEventListener('change',()=>{const f=scrollFraction;requestAnimationFrame(()=>{const s=currentScroller();s.scrollTo({top:f*(s.scrollHeight-s.clientHeight),behavior:'instant'});});});
 $('#explore').onclick=()=>$('#flavour-stage').scrollIntoView({behavior:reduced?'auto':'smooth'});
 
 /* ---------- Menu & Find-us dialog ---------- */
